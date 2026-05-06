@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Home Management System</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f5f7fa;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #2a7ae2;
+      color: #fff;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .container {
+      display: grid;
+      gap: 1rem;
+      padding: 1rem;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .card {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #2a7ae2;
+    }
+
+    .row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    input, select, button {
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      background: #2a7ae2;
+      color: #fff;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #1e5fb8;
+    }
+
+    .item {
+      display: flex;
+      justify-content: space-between;
+      background: #f0f3f7;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      margin-bottom: 0.3rem;
+    }
+
+    small {
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🏠 Mini Home Management System</h1>
+  </header>
+
+  <main class="container">
+    <!-- Rooms Section -->
+    <section class="card">
+      <h2>Rooms & Appliances</h2>
+      <div class="row">
+        <input id="roomName" placeholder="Enter Room Name">
+        <button id="addRoomBtn">Add Room</button>
+      </div>
+      <div class="row">
+        <select id="roomSelect">
+          <option value="">--Select Room--</option>
+        </select>
+        <input id="applianceName" placeholder="Enter Appliance Name">
+        <button id="addApplianceBtn">Add Appliance</button>
+      </div>
+      <div id="applianceList"></div>
+    </section>
+
+    <!-- Task Section -->
+    <section class="card">
+      <h2>Task Manager</h2>
+      <div class="row">
+        <input id="taskName" placeholder="Task Name">
+        <input id="taskDate" type="date">
+        <button id="addTaskBtn">Add Task</button>
+      </div>
+      <div id="taskList"></div>
+    </section>
+
+    <!-- Expense Section -->
+    <section class="card">
+      <h2>Expense Tracker</h2>
+      <div class="row">
+        <input id="expenseTitle" placeholder="Expense Title">
+        <input id="expenseAmount" type="number" placeholder="Amount">
+        <button id="addExpenseBtn">Add Expense</button>
+      </div>
+      <div id="expenseList"></div>
+    </section>
+  </main>
+
+  <script>
+    // Local Storage Helper
+    const saveData = (key, data) => localStorage.setItem(key, JSON.stringify(data));
+    const loadData = (key) => JSON.parse(localStorage.getItem(key) || "[]");
+
+    // Initialize
+    let rooms = loadData("rooms");
+    let appliances = loadData("appliances");
+    let tasks = loadData("tasks");
+    let expenses = loadData("expenses");
+
+    // DOM Elements
+    const roomName = document.getElementById("roomName");
+    const addRoomBtn = document.getElementById("addRoomBtn");
+    const roomSelect = document.getElementById("roomSelect");
+    const applianceName = document.getElementById("applianceName");
+    const addApplianceBtn = document.getElementById("addApplianceBtn");
+    const applianceList = document.getElementById("applianceList");
+    const taskName = document.getElementById("taskName");
+    const taskDate = document.getElementById("taskDate");
+    const addTaskBtn = document.getElementById("addTaskBtn");
+    const taskList = document.getElementById("taskList");
+    const expenseTitle = document.getElementById("expenseTitle");
+    const expenseAmount = document.getElementById("expenseAmount");
+    const addExpenseBtn = document.getElementById("addExpenseBtn");
+    const expenseList = document.getElementById("expenseList");
+
+    // --- ROOMS ---
+    function renderRooms() {
+      roomSelect.innerHTML = '<option value="">--Select Room--</option>';
+      rooms.forEach((r) => {
+        const opt = document.createElement("option");
+        opt.value = r;
+        opt.textContent = r;
+        roomSelect.appendChild(opt);
+      });
+    }
+
+    addRoomBtn.addEventListener("click", () => {
+      const name = roomName.value.trim();
+      if (!name) return alert("Enter room name");
+      rooms.push(name);
+      saveData("rooms", rooms);
+      roomName.value = "";
+      renderRooms();
+      renderAppliances();
+    });
+
+    // --- APPLIANCES ---
+    function renderAppliances() {
+      applianceList.innerHTML = "";
+      appliances.forEach((a, i) => {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <span>${a.name} <small>(${a.room})</small></span>
+          <div>
+            <button onclick="toggleAppliance(${i})">${a.status}</button>
+            <button onclick="deleteAppliance(${i})">❌</button>
+          </div>
+        `;
+        applianceList.appendChild(div);
+      });
+    }
+
+    addApplianceBtn.addEventListener("click", () => {
+      const name = applianceName.value.trim();
+      const room = roomSelect.value;
+      if (!name || !room) return alert("Select room and enter appliance name");
+      appliances.push({ name, room, status: "OFF" });
+      saveData("appliances", appliances);
+      applianceName.value = "";
+      renderAppliances();
+    });
+
+    function toggleAppliance(i) {
+      appliances[i].status = appliances[i].status === "ON" ? "OFF" : "ON";
+      saveData("appliances", appliances);
+      renderAppliances();
+    }
+
+    function deleteAppliance(i) {
+      appliances.splice(i, 1);
+      saveData("appliances", appliances);
+      renderAppliances();
+    }
+
+    // --- TASKS ---
+    function renderTasks() {
+      taskList.innerHTML = "";
+      tasks.forEach((t, i) => {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <span>${t.name} <small>${t.date}</small></span>
+          <div>
+            <input type="checkbox" ${t.done ? "checked" : ""} onchange="toggleTask(${i})">
+            <button onclick="deleteTask(${i})">❌</button>
+          </div>
+        `;
+        taskList.appendChild(div);
+      });
+    }
+
+    addTaskBtn.addEventListener("click", () => {
+      const name = taskName.value.trim();
+      const date = taskDate.value;
+      if (!name) return alert("Enter task name");
+      tasks.push({ name, date, done: false });
+      saveData("tasks", tasks);
+      taskName.value = "";
+      taskDate.value = "";
+      renderTasks();
+    });
+
+    function toggleTask(i) {
+      tasks[i].done = !tasks[i].done;
+      saveData("tasks", tasks);
+      renderTasks();
+    }
+
+    function deleteTask(i) {
+      tasks.splice(i, 1);
+      saveData("tasks", tasks);
+      renderTasks();
+    }
+
+    // --- EXPENSES ---
+    function renderExpenses() {
+      expenseList.innerHTML = "";
+      expenses.forEach((e, i) => {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <span>${e.title} - ₹${e.amount}</span>
+          <button onclick="deleteExpense(${i})">❌</button>
+        `;
+        expenseList.appendChild(div);
+      });
+    }
+
+    addExpenseBtn.addEventListener("click", () => {
+      const title = expenseTitle.value.trim();
+      const amount = expenseAmount.value;
+      if (!title || !amount) return alert("Enter title and amount");
+      expenses.push({ title, amount });
+      saveData("expenses", expenses);
+      expenseTitle.value = "";
+      expenseAmount.value = "";
+      renderExpenses();
+    });
+
+    function deleteExpense(i) {
+      expenses.splice(i, 1);
+      saveData("expenses", expenses);
+      renderExpenses();
+    }
+
+    // --- INIT ---
+    function init() {
+      renderRooms();
+      renderAppliances();
+      renderTasks();
+      renderExpenses();
+    }
+    init();
+  </script>
+</body>
+</html>
